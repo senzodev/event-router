@@ -203,36 +203,17 @@ const handler = async ({ events, eventRouter, eventEmitters, logFailure }) => {
 
             // check if there are failed events and emit to a separate DLQ
             if (failedEvents.length > 0) {
-                const failureTopic = {
-                    routeEnvVar: 'FAILURE_TOPIC',
-                    eventType: 'eventrouter.fail',
-                    eventSubject: 'location',
-                    chunkSize: 20
-                }
+                const failureResponse = await eventEmitters['dlq'].emitter(
+                    failedEvents
+                )
+                observe = observe.concat(failureResponse.observe)
 
-                if (!failureeventDetails) {
-                    const topicResponse = await initTopic(failureTopic.failureEnvVar)
-                    observe = observe.concat(topicResponse.observe)
-                    failureeventDetails = topicResponse.result
-                }
-
-                if (failureeventDetails) {
-                    const failureResponse = await publishEvents(
-                        failedEvents,
-                        failureTopic.eventType,
-                        failureTopic.eventSubject,
-                        failureTopic.chunkSize,
-                        failureeventDetails
-                    )
-                    observe = observe.concat(failureResponse.observe)
-
-                    // if events are successfully emitted to DLQ, then don't log out
-                    if (failureResponse.success) {
-                        logFailure = false
+                // if events are successfully emitted to DLQ, then don't log out
+                if (failureResponse.failedEvents.length > 0) {
+                    if (logFailure) {
+                        console.log(JSON.stringify(failureResponse.failedEvents, '', 2))
                     }
                 }
-            } else {
-                logFailure = false
             }
         }
     } catch (error) {
