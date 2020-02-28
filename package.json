@@ -10,6 +10,7 @@
     "lib",
     "bin"
   ],
+  "type": "module",
   "engines": {
     "node": ">=10.0"
   },

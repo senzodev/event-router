@@ -203,15 +203,21 @@ const handler = async ({ events, eventRouter, eventEmitters, logFailure }) => {
 
             // check if there are failed events and emit to a separate DLQ
             if (failedEvents.length > 0) {
-                const failureResponse = await eventEmitters['dlq'].emitter(
-                    failedEvents
-                )
-                observe = observe.concat(failureResponse.observe)
+                if (typeof eventEmitters.dlq == 'function') {
+                    const failureResponse = await eventEmitters['dlq'].emitter(
+                        failedEvents
+                    )
+                    observe = observe.concat(failureResponse.observe)
 
-                // if events are successfully emitted to DLQ, then don't log out
-                if (failureResponse.failedEvents.length > 0) {
+                    // if events are successfully emitted to DLQ, then don't log out
+                    if (failureResponse.failedEvents.length > 0) {
+                        if (logFailure) {
+                            console.log(JSON.stringify(failureResponse.failedEvents, '', 2))
+                        }
+                    }
+                } else {
                     if (logFailure) {
-                        console.log(JSON.stringify(failureResponse.failedEvents, '', 2))
+                        console.log(JSON.stringify(failedEvents, '', 2))
                     }
                 }
             }
